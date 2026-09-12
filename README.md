@@ -100,14 +100,19 @@ ZephCore-Coder/
 ├── configs/
 │   ├── qlora_7b.yaml
 │   ├── qlora_14b.yaml
-│   └── eval.yaml
+│   ├── eval.yaml
+│   └── sources.yaml
 ├── docs/
 │   ├── DATASET.md
 │   ├── TRAINING.md
 │   ├── EVALUATION.md
+│   ├── BASELINE.md
+│   ├── FIRST_RUN.md
 │   └── ROADMAP.md
 ├── scripts/
 │   ├── collect_git_history.py
+│   ├── select_candidate_commits.py
+│   ├── make_baseline_task.py
 │   ├── build_dataset.py
 │   ├── sanitize_dataset.py
 │   ├── train_qlora.py
@@ -191,3 +196,16 @@ Prefer measurable engineering outcomes:
 9. Integrate best model into a local coding-agent workflow.
 
 See `docs/ROADMAP.md` for the detailed plan.
+
+
+## Start here
+
+The project is now wired to use **AlexGL402/ZephCore-MultiRadio** as its first source repository.
+
+For the first real run, follow:
+
+- `docs/FIRST_RUN.md` — commands and order of operations;
+- `docs/BASELINE.md` — how to reserve and score 10–20 held-out tasks;
+- `configs/sources.yaml` — source repository and important working branches.
+
+Do **baseline first**, then curate training examples. Do not train on the held-out baseline tasks.
