@@ -1,0 +1,47 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+.env.*
+*.pem
+*.key
+
+# Model caches / weights
+.cache/
+hf_cache/
+models/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.gguf
+*.ckpt
+
+# Training output
+lora/*
+!lora/.gitkeep
+eval/results/*
+!eval/results/.gitkeep
+
+# Raw/private data
+dataset/raw/*
+!dataset/raw/.gitkeep
+dataset/processed/*
+!dataset/processed/.gitkeep
+
+# Logs
+*.log
+wandb/
+runs/
