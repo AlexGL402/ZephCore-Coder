@@ -1,0 +1,19 @@
+repositories:
+  - name: ZephCore-MultiRadio
+    github: AlexGL402/ZephCore-MultiRadio
+    local_path: ../ZephCore-MultiRadio
+    branches:
+      - main
+      - nrf52840-e22-433-repeater
+      - diag/nrf52840-e22-rssi
+      - zbridge-s3-gps-web
+      - esp32-c6-espnow
+    notes: |
+      Primary source repository for ZephCore/MeshCore coding tasks.
+      Keep branch information because many accepted fixes lived on feature/diagnostic branches.
+
+baseline:
+  target_model: Qwen/Qwen2.5-Coder-14B-Instruct
+  task_count_target: 20
+  source_repo: ZephCore-MultiRadio
+  require_build_or_test_evidence: true
