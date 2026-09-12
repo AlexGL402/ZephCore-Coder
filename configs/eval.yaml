@@ -1,0 +1,9 @@
+tasks_file: eval/tasks.jsonl
+results_dir: eval/results
+metrics:
+  - patch_applies
+  - build_pass
+  - tests_pass
+  - manual_fix_count
+  - hallucinated_symbol_count
+  - changed_files_count
