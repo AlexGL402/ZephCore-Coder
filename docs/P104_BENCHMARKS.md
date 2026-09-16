@@ -12,8 +12,12 @@ Measured local Ollama / llama.cpp results on P104-100 systems.
 | Huanan | Qwen3.8-27B Q4_K_M | 2× P104-100 direct | 8192 | tensor, ngl=63 | 15.36 tok/s | 10.30 tok/s | 50.91 s | Same 20-token prompt + 512-token generation |
 | Huanan | Qwen3.8-27B Q4_K_M | 2× P104-100 direct | 8192 | tensor, ngl=64 | 17.69 tok/s | 11.49 tok/s | 45.62 s | One more GPU layer gives a clear gain |
 | Huanan | Qwen3.8-27B Q4_K_M | 2× P104-100 direct | 8192 | tensor, ngl=65 | 20.56 tok/s | 12.53 tok/s | 41.76 s | Best measured Huanan 2×P104 result so far |
+| Huanan | Qwen2.5-Coder-14B-Instruct Q4_K_M | 2× P104-100 direct | 32768 | tensor | 63.99 tok/s | 22.63 tok/s | 22.90 s | Full GPU offload |
+| Huanan | Qwen2.5-Coder-14B-Instruct Q4_K_M | 2× P104-100 direct | 32768 | layer | 121.97 tok/s | 18.42 tok/s | 27.91 s | Prompt much faster, generation slower |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 2× P104-100 | 8192 | tensor | 13.43 tok/s | 11.45 tok/s | 46.14 s | Full GPU offload; ~7.77 GiB VRAM/GPU under load |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 2× P104-100 | 8192 | tensor, ngl=63 | 9.61 tok/s | 7.46 tok/s | 70.56 s | Matching partial-offload test against Huanan |
+| AI6 | Qwen2.5-Coder-14B-Instruct Q4_K_M | 2× P104-100, mining x1 risers | 32768 | tensor | 57.89 tok/s | 18.20 tok/s | 28.43 s | Full GPU offload |
+| AI6 | Qwen2.5-Coder-14B-Instruct Q4_K_M | 2× P104-100, mining x1 risers | 32768 | layer | 104.87 tok/s | 17.56 tok/s | 29.29 s | Prompt much faster, generation slightly slower |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 3× P104-100 | 24576 | tensor | 11.46 tok/s | 11.93 tok/s | 44.56 s | ~5.60–5.65 GiB VRAM/GPU idle after load |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 3× P104-100 | 24576 | layer | 14.95 tok/s | 9.90 tok/s | 52.97 s | Same 20-token prompt + 512-token generation; layer is slower overall |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 3× P104-100 | 32768 | tensor | 11.38 tok/s | 11.93 tok/s | 44.58 s | Same 512-token generation test |
@@ -21,7 +25,7 @@ Measured local Ollama / llama.cpp results on P104-100 systems.
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 3× P104-100 | 98304 | tensor | 11.17 tok/s | 11.88 tok/s | 44.81 s | ~7.15–7.26 GiB VRAM/GPU |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 6× P104-100 | 24576 | tensor | 10.45 tok/s | 12.07 tok/s | 44.25 s | ~3.0 GiB VRAM/GPU |
 
-The AI6 rows use the same short benchmark prompt and `n_predict=512`, so the generation numbers are directly useful for 2-vs-3-vs-6 GPU scaling and for tensor-vs-layer comparison at 24K context. The Huanan qwen3-coder rows were measured earlier with different workloads and should not be treated as strict apples-to-apples model comparisons.
+The AI6 rows use the same short benchmark prompt and `n_predict=512`, so the generation numbers are directly useful for 2-vs-3-vs-6 GPU scaling and for tensor-vs-layer comparison. The Huanan qwen3-coder rows were measured earlier with different workloads and should not be treated as strict apples-to-apples model comparisons.
 
 ## Huanan GPU-layer scaling — 2026-09-16
 
@@ -45,6 +49,21 @@ Both systems were tested with 2× P104-100, 8,192 context, tensor split, `-ngl 6
 | AI6 | 9.61 tok/s | 7.46 tok/s | 70.56 s |
 
 With the matched `-ngl 63` configuration, Huanan was about 60% faster in prompt processing, about 38% faster in token generation, and about 28% faster in total completion time. This is consistent with a substantial platform / PCIe-topology advantage for Huanan in this partial-offload multi-GPU workload. The Huanan model blob and the AI6 UD-Q4_K_M file are both Q4_K_M-class but are not guaranteed to be byte-identical, so this should be treated as a strong platform comparison rather than a perfectly controlled binary-identical model test.
+
+## Qwen2.5-Coder-14B direct vs riser and tensor vs layer — 2026-09-16
+
+Both systems used 2× P104-100, 32,768 context, full GPU offload, the same 20-token prompt, and a 512-token generation.
+
+| System | PCIe | Split | Prompt | Generation | Total |
+|---|---|---|---:|---:|---:|
+| Huanan | direct Gen1 ×4 | tensor | 63.99 tok/s | 22.63 tok/s | 22.90 s |
+| Huanan | direct Gen1 ×4 | layer | 121.97 tok/s | 18.42 tok/s | 27.91 s |
+| AI6 | mining x1 risers | tensor | 57.89 tok/s | 18.20 tok/s | 28.43 s |
+| AI6 | mining x1 risers | layer | 104.87 tok/s | 17.56 tok/s | 29.29 s |
+
+With tensor split, the direct Huanan system is about 10.5% faster in prompt processing and about 24.3% faster in generation than AI6 on x1 mining risers; total completion time is about 19.5% lower. This is a much smaller PCIe penalty than the earlier qwen3-coder:30b test, showing that link sensitivity is strongly workload/model dependent.
+
+Switching from tensor to layer split roughly doubles short-prompt throughput on both systems, but hurts generation. On Huanan, generation falls from 22.63 to 18.42 tok/s (~18.6% slower) and total time rises from 22.90 to 27.91 s. On AI6, generation falls only from 18.20 to 17.56 tok/s (~3.5% slower) while prompt throughput jumps from 57.89 to 104.87 tok/s. For long code generation, tensor remains preferable; for workloads dominated by very large prompt ingestion and relatively short outputs, layer split may become interesting, especially on AI6.
 
 ## AI6 tensor vs layer split — 2026-09-16
 
