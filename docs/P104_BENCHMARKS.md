@@ -10,6 +10,8 @@ Measured local Ollama / llama.cpp results on P104-100 systems.
 | Huanan | qwen3-coder:30b | 2× P104-100, mining riser Gen1 ×1 | — | — | 1.03 tok/s | 9.48 tok/s | 114.3 s | Large PCIe penalty |
 | Huanan | qwen3-coder:30b | 3× P104-100 mixed links | 32768 | — | 71.34 tok/s | 37.24 tok/s | 19.04 s | 2 direct + 1 ×1 riser; different prompt workload |
 | Huanan | Qwen3.8-27B Q4_K_M | 2× P104-100 direct | 8192 | tensor, ngl=63 | 15.36 tok/s | 10.30 tok/s | 50.91 s | Same 20-token prompt + 512-token generation |
+| Huanan | Qwen3.8-27B Q4_K_M | 2× P104-100 direct | 8192 | tensor, ngl=64 | 17.69 tok/s | 11.49 tok/s | 45.62 s | One more GPU layer gives a clear gain |
+| Huanan | Qwen3.8-27B Q4_K_M | 2× P104-100 direct | 8192 | tensor, ngl=65 | 20.56 tok/s | 12.53 tok/s | 41.76 s | Best measured Huanan 2×P104 result so far |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 2× P104-100 | 8192 | tensor | 13.43 tok/s | 11.45 tok/s | 46.14 s | Full GPU offload; ~7.77 GiB VRAM/GPU under load |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 2× P104-100 | 8192 | tensor, ngl=63 | 9.61 tok/s | 7.46 tok/s | 70.56 s | Matching partial-offload test against Huanan |
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 3× P104-100 | 24576 | tensor | 11.46 tok/s | 11.93 tok/s | 44.56 s | ~5.60–5.65 GiB VRAM/GPU idle after load |
@@ -20,6 +22,18 @@ Measured local Ollama / llama.cpp results on P104-100 systems.
 | AI6 | Qwen3.8-27B-UD-Q4_K_M | 6× P104-100 | 24576 | tensor | 10.45 tok/s | 12.07 tok/s | 44.25 s | ~3.0 GiB VRAM/GPU |
 
 The AI6 rows use the same short benchmark prompt and `n_predict=512`, so the generation numbers are directly useful for 2-vs-3-vs-6 GPU scaling and for tensor-vs-layer comparison at 24K context. The Huanan qwen3-coder rows were measured earlier with different workloads and should not be treated as strict apples-to-apples model comparisons.
+
+## Huanan GPU-layer scaling — 2026-09-16
+
+On 2× P104-100 with 8,192 context and tensor split, increasing GPU layers produced a large and very consistent gain:
+
+| `-ngl` | Prompt | Generation | Total |
+|---:|---:|---:|---:|
+| 63 | 15.36 tok/s | 10.30 tok/s | 50.91 s |
+| 64 | 17.69 tok/s | 11.49 tok/s | 45.62 s |
+| 65 | 20.56 tok/s | 12.53 tok/s | 41.76 s |
+
+From `ngl=63` to `ngl=65`, prompt throughput improved by about 34%, generation throughput by about 22%, and total completion time dropped by about 18%. This confirms that even a very small CPU-offload portion has a large cost on this workload, and that maximizing GPU-resident layers is important on P104 systems.
 
 ## Huanan vs AI6 matched partial-offload test — 2026-09-16
 
